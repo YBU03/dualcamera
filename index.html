@@ -95,7 +95,10 @@
 
         <div class="stage__notice" id="stageNotice" hidden>
           <p id="stageNoticeText"></p>
-          <button class="pill pill--glass" id="stageNoticeAction" hidden></button>
+          <div class="stage__notice-actions">
+            <button class="pill pill--glass pill--sm" id="stageNoticeAction">Mengerti</button>
+            <button class="pill pill--glass pill--sm" id="stageNoticeDiag">Kenapa?</button>
+          </div>
         </div>
       </div>
     </div>
@@ -202,6 +205,14 @@
           </div>
           <button class="pill pill--glass pill--sm" id="btnSwap2"><svg><use href="#ic-swap"/></svg> Tukar</button>
         </div>
+
+        <div class="row">
+          <div class="row__text">
+            <b>Diagnostik Kamera</b>
+            <span id="diagSummary">Lihat apa yang terjadi saat kamera dibuka</span>
+          </div>
+          <button class="pill pill--glass pill--sm" id="btnDiag">Buka</button>
+        </div>
       </div>
 
       <div class="panel">
@@ -307,6 +318,20 @@
     <p>Rekam kamera <b>depan dan belakang sekaligus</b>, atur layoutnya sesuka kamu, lalu simpan langsung ke HP. Semua diproses di HP kamu — tanpa internet, tanpa upload.</p>
     <button class="pill pill--primary pill--block" id="gateStart"><svg><use href="#ic-camera"/></svg> Mulai Kamera</button>
     <p class="gate__note" id="gateNote">Kamu akan diminta izin akses kamera &amp; mikrofon.</p>
+  </div>
+</div>
+
+<!-- ══════════ OVERLAY: DIAGNOSTIK ══════════ -->
+<div class="viewer" id="diagSheet" hidden>
+  <div class="viewer__bar">
+    <button class="iconbtn iconbtn--glass" id="diagClose" aria-label="Tutup"><svg><use href="#ic-close"/></svg></button>
+    <span>Diagnostik Kamera</span>
+    <span style="width:44px"></span>
+  </div>
+  <div class="diag__body"><pre id="diagText"></pre></div>
+  <div class="viewer__actions">
+    <button class="pill pill--primary" id="diagCopy"><svg><use href="#ic-share"/></svg> Salin Laporan</button>
+    <button class="pill pill--glass" id="diagRetry"><svg><use href="#ic-swap"/></svg> Coba Buka Ulang</button>
   </div>
 </div>
 

@@ -76,17 +76,39 @@ jalur yang benar-benar bekerja:
 
 ## Soal dukungan dual-camera
 
-Membuka dua kamera sekaligus tidak dijamin oleh spesifikasi web, dan hasilnya
-berbeda-beda per perangkat:
+Membuka dua kamera sekaligus tidak dijamin oleh spesifikasi web. Yang membuatnya
+sulit bukan izin, melainkan **anggaran**: lapisan kamera Android mengalokasikan
+bandwidth sensor dan buffer ISP, dan banyak HP menolak dua stream 1080p sekaligus
+padahal 1080p + 480p diterima tanpa masalah.
 
-- **Android + Chrome** — umumnya berhasil; ini target utama aplikasi.
-- **iPhone / Safari** — hanya satu kamera aktif pada satu waktu.
-- Sebagian HP diam-diam mematikan stream pertama saat yang kedua dibuka.
+Karena itu kamera kedua tidak dicoba sekali lalu menyerah. Negosiasinya bertahap:
 
-Aplikasi menangani ketiganya: ia memverifikasi kamera pertama masih hidup
-setelah yang kedua dibuka, dan kalau tidak, turun ke **mode solo** —
-satu kamera, pemberitahuan yang menjelaskan sebabnya, dan foto serta video tetap
-bisa diambil dan disimpan. Status di atas layar selalu menyebut mode yang aktif.
+1. Kamera kedua dicoba menuruni tangga resolusi — 1080p → 720p → 480p → 240p →
+   tanpa petunjuk ukuran sama sekali.
+2. Kalau semuanya ditolak, kamera **pertama** ikut diturunkan lalu pasangannya
+   dicoba ulang, untuk HP yang punya anggaran gabungan.
+3. Setiap percobaan memverifikasi kamera pertama masih hidup — sebagian HP
+   merebut sensor dan mematikan stream lama diam-diam. Begitu itu terbukti,
+   percobaan dihentikan (menurunkan resolusi tidak menolong kalau masalahnya
+   kepemilikan) dan kamera pertama dipulihkan.
+
+Kalau semua jalur buntu, aplikasi turun ke **mode solo**: satu kamera,
+pemberitahuan yang menjelaskan sebabnya, dan foto serta video tetap bisa diambil
+dan disimpan.
+
+Perkiraan per platform:
+
+- **Android + Chrome** — umumnya berhasil, sering kali hanya setelah kamera
+  kedua diturunkan resolusinya. Ini target utama aplikasi.
+- **iPhone / Safari** — hanya satu kamera aktif pada satu waktu; selalu solo.
+
+### Panel diagnostik
+
+Layout → **Diagnostik Kamera** menampilkan laporan lengkap: daftar kamera yang
+terdeteksi, setiap percobaan pembukaan beserta resolusi dan nama error-nya, serta
+resolusi akhir kedua feed. Ada tombol **Salin Laporan** dan **Coba Buka Ulang**
+(berguna kalau aplikasi lain sempat memegang kamera). Saat mode solo, tombol
+**Kenapa?** di pemberitahuan membuka panel yang sama.
 
 ---
 

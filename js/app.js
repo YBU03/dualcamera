@@ -657,6 +657,49 @@ $('#viewerDelete').addEventListener('click', async () => {
   toast('Terhapus');
 });
 
+/* ═══════════════ Diagnostik ═══════════════ */
+
+function openDiag() {
+  $('#diagText').textContent = rig.log.length
+    ? rig.report()
+    : 'Kamera belum pernah dibuka di sesi ini.';
+  $('#diagSheet').hidden = false;
+}
+
+function closeDiag() { $('#diagSheet').hidden = true; }
+
+$('#btnDiag').addEventListener('click', openDiag);
+$('#stageNoticeDiag').addEventListener('click', openDiag);
+$('#diagClose').addEventListener('click', closeDiag);
+
+$('#diagCopy').addEventListener('click', async () => {
+  const text = rig.report();
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Laporan disalin — tempel saja ke chat');
+  } catch {
+    // clipboard API butuh konteks aman dan kadang ditolak; seleksi manual
+    // selalu tersedia sebagai cadangan.
+    const range = document.createRange();
+    range.selectNodeContents($('#diagText'));
+    const sel = getSelection();
+    sel.removeAllRanges(); sel.addRange(range);
+    toast('Tidak bisa menyalin otomatis — teksnya sudah diseleksi, tekan Salin');
+  }
+});
+
+// Membuka ulang kamera dari nol kadang berhasil setelah aplikasi lain
+// melepaskan sensornya.
+$('#diagRetry').addEventListener('click', async () => {
+  closeDiag();
+  toast('Membuka ulang kamera…');
+  comp.stop();
+  rig.stop();
+  videoA.srcObject = null;
+  videoB.srcObject = null;
+  await boot();
+});
+
 /* ═══════════════ Loop render ═══════════════ */
 
 const previewMini = $('#previewMini');
@@ -695,11 +738,14 @@ function applyRigToUi() {
     notice.hidden = false;
     $('#stageNoticeText').textContent =
       `${rig.reason} Aplikasi jalan dengan satu kamera — foto & video tetap bisa disimpan.`;
-    const action = $('#stageNoticeAction');
-    action.hidden = false;
-    action.textContent = 'Mengerti';
-    action.onclick = () => { notice.hidden = true; };
+    $('#stageNoticeAction').onclick = () => { notice.hidden = true; };
   }
+
+  const ok = rig.log.filter((l) => l.ok === true).length;
+  const failed = rig.log.filter((l) => l.ok === false).length;
+  $('#diagSummary').textContent = rig.mode === 'idle'
+    ? 'Kamera belum dibuka'
+    : `${rig.devices.length} kamera terdeteksi · ${ok} langkah berhasil, ${failed} gagal`;
 
   $('#btnSwap').disabled = !dual;
   $('#btnSwap').style.opacity = dual ? '' : '.4';
@@ -707,17 +753,19 @@ function applyRigToUi() {
 }
 
 async function boot() {
+  $('#gate').hidden = false;
   $('#gateStart').disabled = true;
   $('#gateNote').textContent = 'Meminta izin kamera…';
 
   try {
-    await rig.start();
+    await rig.start((msg) => { $('#gateNote').textContent = msg; });
   } catch (err) {
     $('#gateStart').disabled = false;
     $('#gateNote').textContent = err.message || String(err);
     setStatus('KAMERA TIDAK SIAP', 'error');
     return;
   }
+  $('#gateStart').disabled = false;
 
   await Promise.all([attach(videoA, rig.back), attach(videoB, rig.front)]);
 
