@@ -1,0 +1,79 @@
+/* ═══════════════════════════════════════════════════════════
+   Atelier Titanium Ice — design tokens
+   Diturunkan dari DESIGN.md (Stitch export)
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  /* Canvas & glass */
+  --obsidian:            #0B0F19;
+  --surface:             #0f131d;
+  --surface-elevated:    #1F2937;
+  --surface-container:   #1c1f2a;
+  --glass-ultrathin:     rgba(202, 222, 245, 0.05);
+  --glass-thin:          rgba(202, 222, 245, 0.08);
+  --glass-regular:       rgba(202, 222, 245, 0.12);
+  --glass-thick:         rgba(15, 23, 42, 0.65);
+  --glass-modal:         rgba(15, 23, 42, 0.78);
+
+  /* Accents */
+  --primary:             #38BDF8;
+  --primary-deep:        #2563EB;
+  --tertiary:            #7DD3FC;
+  --danger:              #FF6B6B;
+  --danger-deep:         #93000a;
+  --rec:                 #FF3B30;
+
+  /* Text */
+  --text-primary:        #FFFFFF;
+  --text-secondary:      #E0ECF8;
+  --text-muted:          #9CA3AF;
+  --text-dim:            #6B7280;
+
+  /* Lines */
+  --border-glass:        rgba(255, 255, 255, 0.12);
+  --border-hairline:     rgba(255, 255, 255, 0.08);
+  --border-highlight:    rgba(125, 211, 252, 0.35);
+
+  /* Depth */
+  --blur-1: blur(20px) saturate(180%);
+  --blur-2: blur(32px) saturate(190%);
+  --blur-3: blur(48px) saturate(160%);
+  --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.5);
+  --glow-primary: 0 0 24px rgba(56, 189, 248, 0.18);
+  --glow-strong:  0 4px 18px rgba(37, 99, 235, 0.42);
+
+  /* Radius (Apple squircle approximation) */
+  --r-sm: 0.5rem;
+  --r-md: 1rem;
+  --r-lg: 1.5rem;
+  --r-xl: 2rem;
+  --r-2xl: 2.5rem;
+  --r-pill: 9999px;
+
+  /* Rhythm — 8pt baseline with 4pt half-step */
+  --s-xs: 0.25rem;
+  --s-sm: 0.5rem;
+  --s-md: 1rem;
+  --s-lg: 1.5rem;
+  --s-xl: 2.5rem;
+  --gutter: 1rem;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Safe areas */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --tabbar-h: 72px;
+}
+
+/* Typography scale — Apple HIG metrics */
+.t-display { font-size: 2.25rem; font-weight: 700; line-height: 2.75rem; letter-spacing: -0.025em; }
+.t-headline{ font-size: 1.5rem;  font-weight: 600; line-height: 2rem;    letter-spacing: -0.015em; }
+.t-title   { font-size: 1.25rem; font-weight: 600; line-height: 1.75rem; letter-spacing: -0.01em; }
+.t-body-lg { font-size: 1.0625rem; font-weight: 400; line-height: 1.625rem; letter-spacing: -0.01em; }
+.t-body    { font-size: 0.9375rem; font-weight: 400; line-height: 1.375rem; letter-spacing: -0.005em; }
+.t-body-sm { font-size: 0.8125rem; font-weight: 400; line-height: 1.125rem; }
+.t-label   { font-size: 0.75rem;  font-weight: 600; line-height: 1rem; letter-spacing: 0.04em; }
+.t-hud     { font-size: 0.6875rem; font-weight: 500; line-height: 0.875rem; letter-spacing: 0.08em; text-transform: uppercase; }

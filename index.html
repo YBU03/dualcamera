@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#0B0F19" />
+<meta name="description" content="DualCam Studio — rekam kamera depan & belakang sekaligus, atur layoutnya, simpan langsung ke HP. Jalan offline." />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="DualCam" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="assets/icon-192.png" />
+<link rel="apple-touch-icon" href="assets/icon-192.png" />
+<link rel="stylesheet" href="css/fonts.css" />
+<link rel="stylesheet" href="css/tokens.css" />
+<link rel="stylesheet" href="css/app.css" />
+<title>DualCam Studio</title>
+</head>
+<body>
+
+<svg class="sprite" aria-hidden="true">
+  <symbol id="ic-camera" viewBox="0 0 24 24"><path d="M15 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3.5l4.5 3.2a.6.6 0 0 0 .95-.49V7.79a.6.6 0 0 0-.95-.49L15 10.5Z"/></symbol>
+  <symbol id="ic-layouts" viewBox="0 0 24 24"><path d="M4 4h6.2v6.2H4V4Zm9.8 0H20v6.2h-6.2V4ZM4 13.8h6.2V20H4v-6.2Zm9.8 0H20V20h-6.2v-6.2Z"/></symbol>
+  <symbol id="ic-photobox" viewBox="0 0 24 24"><path d="M3.8 4h16.4A1.8 1.8 0 0 1 22 5.8v12.4A1.8 1.8 0 0 1 20.2 20H3.8A1.8 1.8 0 0 1 2 18.2V5.8A1.8 1.8 0 0 1 3.8 4Zm.2 2v12h16V6H4Zm2 2h5v8H6V8Z"/></symbol>
+  <symbol id="ic-gallery" viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v10.2l3.6-3.4a1 1 0 0 1 1.36-.02L14 15.3l2.1-1.9a1 1 0 0 1 1.35.01L19 14.8V5H5Zm11.2 2.2a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4Z"/></symbol>
+  <symbol id="ic-swap" viewBox="0 0 24 24"><path d="M7.5 4.6 4 8.1l3.5 3.5 1.27-1.27-1.33-1.33H16V7.2H7.44l1.33-1.33L7.5 4.6Zm9 7.8-1.27 1.27 1.33 1.33H8v1.8h8.56l-1.33 1.33 1.27 1.27L20 15.9l-3.5-3.5Z"/></symbol>
+  <symbol id="ic-bolt" viewBox="0 0 24 24"><path d="M13.2 2 5 13.4h5.1L9.6 22l8.4-11.7h-5.3L13.2 2Z"/></symbol>
+  <symbol id="ic-timer" viewBox="0 0 24 24"><path d="M9.5 2h5v2h-5V2Zm2.5 3.8A8.1 8.1 0 1 1 3.9 13.9 8.1 8.1 0 0 1 12 5.8Zm0 2a6.1 6.1 0 1 0 0 12.2 6.1 6.1 0 0 0 0-12.2Zm-.9 2.1h1.8v4.4l3 1.8-.9 1.5-3.9-2.3V9.9Z"/></symbol>
+  <symbol id="ic-grid" viewBox="0 0 24 24"><path d="M3 3h18v18H3V3Zm1.8 1.8v4.4h4.4V4.8H4.8Zm6.2 0v4.4h2V4.8h-2Zm3.8 0v4.4h4.4V4.8h-4.4ZM4.8 11v2h4.4v-2H4.8Zm6.2 0v2h2v-2h-2Zm3.8 0v2h4.4v-2h-4.4ZM4.8 14.8v4.4h4.4v-4.4H4.8Zm6.2 0v4.4h2v-4.4h-2Zm3.8 0v4.4h4.4v-4.4h-4.4Z"/></symbol>
+  <symbol id="ic-download" viewBox="0 0 24 24"><path d="M11.1 3h1.8v9.1l3.2-3.2 1.27 1.27L12 15.8l-5.37-5.63L7.9 8.9l3.2 3.2V3ZM4 18h16v2H4v-2Z"/></symbol>
+  <symbol id="ic-share" viewBox="0 0 24 24"><path d="M13 3.8 17.2 8l-1.27 1.27L13.9 7.2V15h-1.8V7.2L10.07 9.27 8.8 8 13 3.8ZM5 12h3v1.8H6.8v5.4h11.4v-5.4H17V12h3v9H5v-9Z"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24"><path d="M9 3h6l.8 1.6H20v1.8H4V4.6h4.2L9 3ZM5.6 8h12.8l-.9 12.2A1.8 1.8 0 0 1 15.7 22H8.3a1.8 1.8 0 0 1-1.8-1.8L5.6 8Zm3.6 2 .3 9h1.8l-.3-9H9.2Zm4 0-.3 9h1.8l.3-9h-1.8Z"/></symbol>
+  <symbol id="ic-close" viewBox="0 0 24 24"><path d="m12 10.6 5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4 5.3 5.3Z"/></symbol>
+  <symbol id="ic-back" viewBox="0 0 24 24"><path d="M14.7 4.5 7.2 12l7.5 7.5 1.4-1.4L10 12l6.1-6.1-1.4-1.4Z"/></symbol>
+  <symbol id="ic-sliders" viewBox="0 0 24 24"><path d="M3 5.6h9.2v1.8H3V5.6Zm12.8 0H21v1.8h-5.2V5.6Zm-2.9-2.2h1.8v6.2h-1.8V3.4ZM3 16.6h5.2v1.8H3v-1.8Zm8.8 0H21v1.8h-9.2v-1.8ZM8.9 14.4h1.8v6.2H8.9v-6.2Z"/></symbol>
+  <symbol id="ic-play" viewBox="0 0 24 24"><path d="M8 5.1 19 12 8 18.9V5.1Z"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24"><path d="M9.6 16.2 5.4 12l-1.4 1.4 5.6 5.6L20.4 7.7 19 6.3 9.6 16.2Z"/></symbol>
+</svg>
+
+<!-- ══════════ APP SHELL ══════════ -->
+<div class="app" id="app">
+
+  <!-- Status strip -->
+  <div class="statusline" id="statusline">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">MENYIAPKAN LENSA</span>
+  </div>
+
+  <!-- ══════════ VIEW: CAMERA ══════════ -->
+  <section class="view view--camera is-active" id="view-camera">
+    <header class="appbar">
+      <div class="appbar__brand">
+        <div class="brandmark"><svg><use href="#ic-camera"/></svg></div>
+        <div>
+          <div class="brandmark__kicker">DUALCAM STUDIO</div>
+          <h1 class="brandmark__title">Kamera</h1>
+        </div>
+      </div>
+      <button class="iconbtn iconbtn--accent" id="btnSettings" aria-label="Pengaturan">
+        <svg><use href="#ic-sliders"/></svg>
+      </button>
+    </header>
+
+    <div class="stage-wrap">
+      <div class="stage" id="stage">
+        <canvas id="viewfinder" class="viewfinder"></canvas>
+
+        <div class="stage__hud">
+          <button class="hudchip" id="btnTorch" aria-pressed="false" title="Senter">
+            <svg><use href="#ic-bolt"/></svg>
+          </button>
+          <button class="hudchip" id="btnTimer" title="Timer">
+            <svg><use href="#ic-timer"/></svg><span id="timerLabel"></span>
+          </button>
+          <button class="hudchip" id="btnGrid" aria-pressed="false" title="Garis bantu">
+            <svg><use href="#ic-grid"/></svg>
+          </button>
+        </div>
+
+        <div class="stage__foot">
+          <button class="hudchip hudchip--wide" id="btnLayoutQuick">
+            <span class="dot dot--live"></span><span id="layoutQuickLabel">Split Vertical</span>
+          </button>
+          <div class="zoomrail" id="zoomRail">
+            <button class="zoombtn is-active" data-zoom="1">1x</button>
+          </div>
+        </div>
+
+        <div class="rec-badge" id="recBadge" hidden>
+          <span class="rec-badge__dot"></span><span id="recTime">00:00</span>
+        </div>
+        <div class="countdown" id="countdown" hidden></div>
+        <div class="shutter-flash" id="shutterFlash"></div>
+
+        <div class="stage__notice" id="stageNotice" hidden>
+          <p id="stageNoticeText"></p>
+          <button class="pill pill--glass" id="stageNoticeAction" hidden></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modestrip" id="modeStrip">
+      <button class="modestrip__item is-active" data-mode="photo">FOTO</button>
+      <button class="modestrip__item" data-mode="video">VIDEO</button>
+      <button class="modestrip__item is-locked" data-mode="photobox" disabled>PHOTOBOX<i>SEGERA</i></button>
+    </div>
+
+    <div class="shutterbar">
+      <button class="thumbbtn" id="btnLastShot" aria-label="Buka galeri">
+        <img id="lastShotImg" alt="" />
+        <span class="thumbbtn__empty" id="lastShotEmpty">DUAL</span>
+      </button>
+
+      <button class="shutter" id="btnShutter" aria-label="Ambil gambar">
+        <span class="shutter__ring"></span>
+        <span class="shutter__core"></span>
+      </button>
+
+      <button class="iconbtn iconbtn--glass" id="btnSwap" aria-label="Tukar posisi kamera depan & belakang">
+        <svg><use href="#ic-swap"/></svg>
+      </button>
+    </div>
+
+    <div class="telemetry" id="telemetry">
+      <span><b id="telLayout">SPLIT VERTICAL</b></span>
+      <span><b id="telRes">1080 × 1920</b></span>
+      <span><b id="telFps">-- FPS</b></span>
+    </div>
+  </section>
+
+  <!-- ══════════ VIEW: LAYOUTS ══════════ -->
+  <section class="view view--scroll" id="view-layouts">
+    <header class="appbar">
+      <div class="appbar__brand">
+        <div class="brandmark"><svg><use href="#ic-layouts"/></svg></div>
+        <div>
+          <div class="brandmark__kicker">DUALCAM STUDIO</div>
+          <h1 class="brandmark__title">Layout</h1>
+        </div>
+      </div>
+      <span class="tag" id="layoutTag">Split Vertical</span>
+    </header>
+
+    <div class="scrollbody">
+      <div class="section-kicker"><span class="dot dot--live"></span> PRATINJAU LANGSUNG</div>
+      <div class="preview-card">
+        <canvas id="previewMini" class="preview-mini"></canvas>
+      </div>
+
+      <h2 class="h-section"><svg class="h-section__ic"><use href="#ic-layouts"/></svg> Pilih Layout Dual-Cam</h2>
+      <p class="p-muted">Pilih komposisi kamera depan &amp; belakang favoritmu. Geser kotak PiP langsung di layar kamera untuk mengatur posisinya.</p>
+
+      <div class="layoutgrid" id="layoutGrid"></div>
+
+      <div class="panel">
+        <div class="panel__head">
+          <span><svg class="h-section__ic"><use href="#ic-sliders"/></svg> FINE-TUNING OPTIK</span>
+          <button class="linkbtn" id="btnResetTuning">RESET</button>
+        </div>
+
+        <div class="field" id="fieldRatio">
+          <label>Rasio Pembagian <b id="valRatio">50 : 50</b></label>
+          <input type="range" id="rngRatio" min="20" max="80" step="1" value="50" />
+        </div>
+
+        <div class="field" id="fieldPip">
+          <label>Ukuran PiP <b id="valPip">34%</b></label>
+          <input type="range" id="rngPip" min="18" max="60" step="1" value="34" />
+        </div>
+
+        <div class="field">
+          <label>Tebal Garis <b id="valBorder">2 px</b></label>
+          <input type="range" id="rngBorder" min="0" max="12" step="1" value="2" />
+        </div>
+
+        <div class="field">
+          <label>Radius Sudut <b id="valRadius">16 px</b></label>
+          <input type="range" id="rngRadius" min="0" max="64" step="1" value="16" />
+        </div>
+
+        <div class="row">
+          <div class="row__text">
+            <b>Titanium Blue Glow</b>
+            <span>Rim neon spekular di garis pemisah</span>
+          </div>
+          <button class="switch is-on" id="swGlow" role="switch" aria-checked="true"><span></span></button>
+        </div>
+
+        <div class="row">
+          <div class="row__text">
+            <b>Cermin Kamera Depan</b>
+            <span>Tampilan selfie seperti di cermin</span>
+          </div>
+          <button class="switch is-on" id="swMirror" role="switch" aria-checked="true"><span></span></button>
+        </div>
+
+        <div class="row">
+          <div class="row__text">
+            <b>Tukar Posisi Feed</b>
+            <span>Depan ⇄ belakang bertukar tempat</span>
+          </div>
+          <button class="pill pill--glass pill--sm" id="btnSwap2"><svg><use href="#ic-swap"/></svg> Tukar</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__head"><span><svg class="h-section__ic"><use href="#ic-camera"/></svg> FORMAT REKAMAN</span></div>
+        <div class="field">
+          <label>Rasio Bingkai</label>
+          <div class="segmented" id="segAspect">
+            <button data-aspect="9:16" class="is-active">9:16</button>
+            <button data-aspect="3:4">3:4</button>
+            <button data-aspect="1:1">1:1</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Kualitas</label>
+          <div class="segmented" id="segQuality">
+            <button data-q="720">HD 720</button>
+            <button data-q="1080" class="is-active">FHD 1080</button>
+            <button data-q="1440">QHD 1440</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__text">
+            <b>Auto-simpan ke HP</b>
+            <span>Hasil langsung diunduh ke penyimpanan HP</span>
+          </div>
+          <button class="switch is-on" id="swAutoSave" role="switch" aria-checked="true"><span></span></button>
+        </div>
+      </div>
+
+      <button class="pill pill--primary pill--block" id="btnUseLayout">
+        <svg><use href="#ic-check"/></svg> Gunakan Layout Ini
+      </button>
+      <p class="footnote" id="layoutFootnote">SIAP MEREKAM DUAL SENSOR</p>
+    </div>
+  </section>
+
+  <!-- ══════════ VIEW: GALLERY ══════════ -->
+  <section class="view view--scroll" id="view-gallery">
+    <header class="appbar">
+      <div class="appbar__brand">
+        <div class="brandmark"><svg><use href="#ic-gallery"/></svg></div>
+        <div>
+          <div class="brandmark__kicker">DUALCAM STUDIO</div>
+          <h1 class="brandmark__title">Galeri</h1>
+        </div>
+      </div>
+      <button class="iconbtn iconbtn--glass" id="btnRefreshGallery" aria-label="Muat ulang">
+        <svg><use href="#ic-swap"/></svg>
+      </button>
+    </header>
+
+    <div class="scrollbody">
+      <div class="chiprow" id="galleryFilters">
+        <button class="chip is-active" data-filter="all">Semua</button>
+        <button class="chip" data-filter="photo">Foto</button>
+        <button class="chip" data-filter="video">Video</button>
+      </div>
+
+      <div class="gallerygrid" id="galleryGrid"></div>
+
+      <div class="empty" id="galleryEmpty">
+        <svg><use href="#ic-gallery"/></svg>
+        <b>Belum ada tangkapan</b>
+        <span>Hasil foto &amp; video dual-cam kamu akan muncul di sini, tersimpan offline di HP.</span>
+      </div>
+
+      <div class="storagebar" id="storageBar">
+        <span class="dot dot--live"></span>
+        <span id="storageText">0 item tersimpan</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ TAB BAR ══════════ -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab is-active" data-view="camera"><svg><use href="#ic-camera"/></svg><span>Kamera</span></button>
+    <button class="tab" data-view="layouts"><svg><use href="#ic-layouts"/></svg><span>Layout</span></button>
+    <button class="tab tab--locked" data-view="photobox" disabled><svg><use href="#ic-photobox"/></svg><span>Photobox</span></button>
+    <button class="tab" data-view="gallery"><svg><use href="#ic-gallery"/></svg><span>Galeri</span></button>
+  </nav>
+</div>
+
+<!-- ══════════ OVERLAY: VIEWER ══════════ -->
+<div class="viewer" id="viewer" hidden>
+  <div class="viewer__bar">
+    <button class="iconbtn iconbtn--glass" id="viewerClose" aria-label="Tutup"><svg><use href="#ic-close"/></svg></button>
+    <span id="viewerMeta"></span>
+    <span style="width:44px"></span>
+  </div>
+  <div class="viewer__stage" id="viewerStage"></div>
+  <div class="viewer__actions">
+    <button class="pill pill--glass" id="viewerSave"><svg><use href="#ic-download"/></svg> Simpan ke HP</button>
+    <button class="pill pill--glass" id="viewerShare"><svg><use href="#ic-share"/></svg> Bagikan</button>
+    <button class="pill pill--danger" id="viewerDelete"><svg><use href="#ic-trash"/></svg> Hapus</button>
+  </div>
+</div>
+
+<!-- ══════════ OVERLAY: PERMISSION GATE ══════════ -->
+<div class="gate" id="gate">
+  <div class="gate__card">
+    <div class="brandmark brandmark--lg"><svg><use href="#ic-camera"/></svg></div>
+    <h2>DualCam Studio</h2>
+    <p>Rekam kamera <b>depan dan belakang sekaligus</b>, atur layoutnya sesuka kamu, lalu simpan langsung ke HP. Semua diproses di HP kamu — tanpa internet, tanpa upload.</p>
+    <button class="pill pill--primary pill--block" id="gateStart"><svg><use href="#ic-camera"/></svg> Mulai Kamera</button>
+    <p class="gate__note" id="gateNote">Kamu akan diminta izin akses kamera &amp; mikrofon.</p>
+  </div>
+</div>
+
+<div class="toaster" id="toaster"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
