@@ -92,15 +92,44 @@ Karena itu kamera kedua tidak dicoba sekali lalu menyerah. Negosiasinya bertahap
    percobaan dihentikan (menurunkan resolusi tidak menolong kalau masalahnya
    kepemilikan) dan kamera pertama dipulihkan.
 
-Kalau semua jalur buntu, aplikasi turun ke **mode solo**: satu kamera,
-pemberitahuan yang menjelaskan sebabnya, dan foto serta video tetap bisa diambil
-dan disimpan.
+Kalau semua jalur buntu tapi perangkatnya **punya** dua kamera, aplikasi tidak
+menyerah ke mode solo — ia beralih ke **mode bergantian** (lihat di bawah).
+Mode solo hanya dipakai kalau memang cuma ada satu kamera.
 
 Perkiraan per platform:
 
-- **Android + Chrome** — umumnya berhasil, sering kali hanya setelah kamera
-  kedua diturunkan resolusinya. Ini target utama aplikasi.
-- **iPhone / Safari** — hanya satu kamera aktif pada satu waktu; selalu solo.
+- **Android + Chrome** — sering berhasil, kerap hanya setelah kamera kedua
+  diturunkan resolusinya. Sebagian HP tetap menolak.
+- **iPhone / Safari** — hanya satu kamera aktif pada satu waktu. Ini batasan
+  Apple, bukan bug, dan tidak ada jalan memutarnya lewat web. Selalu bergantian.
+
+## Mode bergantian
+
+Untuk perangkat yang tidak bisa membuka dua kamera serentak, kedua kamera tetap
+dipakai — hanya tidak pada saat yang sama. Karena hanya satu stream yang pernah
+terbuka, tidak ada anggaran yang dilanggar dan tidak ada sensor yang direbut,
+sehingga cara ini bekerja **di mana saja, termasuk iPhone**.
+
+**Pratinjau.** Sisi yang aktif tampil hidup; sisi lain memakai frame terakhir
+yang dibekukan. Chip `HIDUP: BELAKANG` menandai mana yang sedang hidup, dan
+mengetuknya menukar sisi aktif.
+
+**Saat rana ditekan**, aplikasi menjalankan urutan ini sendiri:
+
+1. Bekukan frame sisi yang sedang hidup.
+2. Pindah ke sisi lain.
+3. Tunggu ±700 ms — kamera yang baru dibuka butuh waktu menyetel eksposur dan
+   fokus; menjepret terlalu cepat menghasilkan frame gelap atau buram.
+4. Bekukan frame sisi itu juga.
+5. Gabungkan keduanya sesuai layout, simpan, lalu kembalikan pratinjau.
+
+Hasilnya foto dual-cam sungguhan dengan kedua kamera segar — hanya saja keduanya
+terpaut sekitar satu detik, bukan serentak. Setiap hasil menyimpan penanda
+`capture: "bergantian"` atau `"serentak"` sehingga asal-usulnya jelas.
+
+**Video** di mode ini merekam sisi yang hidup saja; sisi lain tetap sebagai foto
+diam di dalam bingkai. Aplikasi mengatakannya sekali saat rekaman pertama
+dimulai.
 
 ### Panel diagnostik
 

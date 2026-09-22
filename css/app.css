@@ -197,6 +197,30 @@ img { display: block; max-width: 100%; }
 }
 @keyframes tick { from { transform: scale(1.35); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+.seqstatus {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 7;
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 22px;
+  border-radius: var(--r-pill);
+  background: var(--glass-modal);
+  backdrop-filter: var(--blur-3); -webkit-backdrop-filter: var(--blur-3);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-3);
+  font-size: 0.875rem; font-weight: 600; color: var(--text-secondary);
+  white-space: nowrap;
+}
+.seqstatus__spin {
+  width: 18px; height: 18px; flex: none;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .18);
+  border-top-color: var(--primary);
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#btnLiveSide b { color: var(--primary); font-weight: 700; }
+
 .shutter-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 8; }
 .shutter-flash.is-firing { animation: flash .32s var(--ease-out); }
 @keyframes flash { 0% { opacity: .85; } 100% { opacity: 0; } }

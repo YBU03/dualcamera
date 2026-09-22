@@ -79,6 +79,10 @@
         </div>
 
         <div class="stage__foot">
+          <button class="hudchip" id="btnLiveSide" hidden>
+            <span class="dot dot--live"></span>
+            <span>HIDUP: <b id="liveSideLabel">BELAKANG</b></span>
+          </button>
           <button class="hudchip hudchip--wide" id="btnLayoutQuick">
             <span class="dot dot--live"></span><span id="layoutQuickLabel">Split Vertical</span>
           </button>
@@ -91,11 +95,16 @@
           <span class="rec-badge__dot"></span><span id="recTime">00:00</span>
         </div>
         <div class="countdown" id="countdown" hidden></div>
+        <div class="seqstatus" id="seqStatus" hidden>
+          <span class="seqstatus__spin"></span>
+          <span id="seqText"></span>
+        </div>
         <div class="shutter-flash" id="shutterFlash"></div>
 
         <div class="stage__notice" id="stageNotice" hidden>
           <p id="stageNoticeText"></p>
           <div class="stage__notice-actions">
+            <button class="pill pill--primary pill--sm" id="stageNoticeAlt" hidden>Aktifkan Mode Bergantian</button>
             <button class="pill pill--glass pill--sm" id="stageNoticeAction">Mengerti</button>
             <button class="pill pill--glass pill--sm" id="stageNoticeDiag">Kenapa?</button>
           </div>

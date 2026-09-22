@@ -8,9 +8,27 @@
 
 import { computeSlots, outputSize, hitTestDraggable } from './layouts.js';
 
-/** Gambar video ke kotak tujuan dengan perilaku object-fit: cover. */
+/**
+ * Ukuran alami sebuah sumber. Sumber bisa berupa <video> yang hidup ATAU
+ * <canvas> berisi frame beku — mode bergantian memakai yang kedua untuk sisi
+ * kamera yang sedang tidak aktif.
+ */
+export function sourceSize(src) {
+  if (!src) return { w: 0, h: 0 };
+  return { w: src.videoWidth ?? src.width ?? 0, h: src.videoHeight ?? src.height ?? 0 };
+}
+
+/** Sudah ada piksel yang bisa digambar? */
+export function sourceReady(src) {
+  if (!src) return false;
+  if ('readyState' in src) return src.readyState >= 2;   // <video>
+  const { w, h } = sourceSize(src);
+  return w > 0 && h > 0;                                  // <canvas>
+}
+
+/** Gambar sumber ke kotak tujuan dengan perilaku object-fit: cover. */
 function drawCover(ctx, src, dx, dy, dw, dh, mirror) {
-  const sw = src.videoWidth, sh = src.videoHeight;
+  const { w: sw, h: sh } = sourceSize(src);
   if (!sw || !sh || dw <= 0 || dh <= 0) return;
 
   const scale = Math.max(dw / sw, dh / sh);
@@ -74,10 +92,13 @@ export class Compositor {
     this._raf = 0;
   }
 
-  /** Pasang dua elemen video sumber. B boleh null (mode solo). */
-  setSources(videoA, videoB) {
-    this.videoA = videoA;
-    this.videoB = videoB;
+  /**
+   * Pasang dua sumber gambar. Masing-masing boleh <video> hidup atau <canvas>
+   * berisi frame beku; B boleh null (mode solo satu kamera).
+   */
+  setSources(sourceA, sourceB) {
+    this.videoA = sourceA;
+    this.videoB = sourceB;
   }
 
   resize() {
@@ -140,7 +161,7 @@ export class Compositor {
       ctx.save();
       pathFor(ctx, slot, radius);
       ctx.clip();
-      if (src && src.readyState >= 2) {
+      if (sourceReady(src)) {
         const box = slot.shape === 'circle'
           ? { x: slot.cx - slot.r, y: slot.cy - slot.r, w: slot.r * 2, h: slot.r * 2 }
           : slot.shape === 'poly'

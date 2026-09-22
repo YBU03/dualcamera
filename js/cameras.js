@@ -73,6 +73,21 @@ export class CameraRig extends EventTarget {
     this.devices = [];
     this.log = [];
     this.exclusive = false;   // HP terbukti mematikan kamera pertama demi kedua
+
+    // Dipakai mode bergantian: id perangkat per sisi, supaya tiap sisi bisa
+    // dibuka ulang sendiri-sendiri tanpa menebak lagi.
+    this.backIds = [];
+    this.frontIds = [];
+    this.activeSide = 'back';
+  }
+
+  /**
+   * Dua kamera ada, tapi tidak bisa hidup bersamaan. Inilah kondisi yang
+   * membuat mode bergantian masuk akal — dan yang membedakannya dari HP yang
+   * memang cuma punya satu kamera.
+   */
+  get canAlternate() {
+    return this.mode === 'solo' && this.frontIds.length > 0;
   }
 
   get backTrack()  { return this.back?.getVideoTracks()[0] ?? null; }
@@ -169,6 +184,9 @@ export class CameraRig extends EventTarget {
     const candidates = this.devices.filter((d) => d.deviceId && d.deviceId !== backId);
     const byLabel = candidates.filter((d) => labelFacing(d.label) === 'user');
     const ordered = [...byLabel, ...candidates.filter((d) => !byLabel.includes(d))];
+
+    this.backIds = backId ? [backId] : [];
+    this.frontIds = ordered.map((d) => d.deviceId);
 
     // ── 4. Cari pasangan, turun tangga resolusi ─────────────────────────
     let outcome = await this.tryPair(ordered, backLabel, backRung);
@@ -274,6 +292,60 @@ export class CameraRig extends EventTarget {
     if (mode === 'solo') { stopStream(this.front); this.front = null; }
     this.watchTracks();
     this.emit('change', { mode, reason });
+  }
+
+  /**
+   * Mode bergantian: jadikan SATU sisi aktif, tutup yang lain.
+   *
+   * Ini jalur untuk HP yang menolak dua kamera sekaligus. Karena hanya satu
+   * stream yang pernah terbuka, tidak ada anggaran yang dilanggar dan tidak ada
+   * sensor yang direbut — jadi ia bekerja di mana saja, termasuk iOS.
+   *
+   * @param {'back'|'front'} side
+   * @returns {Promise<boolean>} berhasil atau tidak
+   */
+  async openSide(side) {
+    stopStream(this.back);
+    stopStream(this.front);
+    this.back = null;
+    this.front = null;
+
+    const ids = side === 'back' ? this.backIds : this.frontIds;
+    const facing = side === 'back' ? 'environment' : 'user';
+
+    for (const deviceId of ids) {
+      for (const rung of RES_LADDER) {
+        try {
+          const stream = await this.openById(deviceId, rung);
+          this.adopt(side, stream);
+          return true;
+        } catch { /* rung berikutnya */ }
+      }
+    }
+
+    // Tanpa deviceId yang cocok, minta lewat facingMode.
+    for (const exact of [true, false]) {
+      for (const rung of RES_LADDER) {
+        try {
+          const stream = await this.openFacing(facing, rung, exact);
+          this.adopt(side, stream);
+          return true;
+        } catch { /* terus turun */ }
+      }
+    }
+
+    this.note(`Gagal membuka sisi "${side}" di mode bergantian`, false);
+    return false;
+  }
+
+  adopt(side, stream) {
+    if (side === 'back') this.back = stream; else this.front = stream;
+    this.activeSide = side;
+  }
+
+  /** Sumber video yang sedang hidup, apa pun sisinya. */
+  get liveStream() {
+    return this.activeSide === 'back' ? this.back : this.front;
   }
 
   /** Audio terpisah supaya prompt kamera tidak tertahan kalau mic ditolak. */

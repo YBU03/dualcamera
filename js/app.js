@@ -44,7 +44,20 @@ const state = {
   dragging: null,
   viewerId: null,
   viewerUrl: null,
+  alternating: false,   // satu kamera hidup bergiliran, sisanya frame beku
 };
+
+/**
+ * Mode bergantian menyimpan frame terakhir tiap sisi di sini. Kanvas yang masih
+ * 0×0 dianggap belum terisi, dan compositor menggambarnya sebagai slot kosong.
+ */
+const frozen = {
+  back: document.createElement('canvas'),
+  front: document.createElement('canvas'),
+};
+
+const SIDE_LABEL = { back: 'Belakang', front: 'Depan' };
+const other = (side) => (side === 'back' ? 'front' : 'back');
 
 const rig = new CameraRig();
 const canvas = $('#viewfinder');
@@ -242,7 +255,9 @@ function syncTuningUI() {
 
   $('#layoutFootnote').textContent = rig.mode === 'dual'
     ? `SIAP MEREKAM DUAL SENSOR · ${w}×${h}`
-    : 'MODE SOLO — SATU KAMERA AKTIF';
+    : state.alternating
+      ? `MODE BERGANTIAN · ${w}×${h}`
+      : 'MODE SOLO — SATU KAMERA AKTIF';
 }
 
 function setSwitch(el, on) {
@@ -404,6 +419,154 @@ function buildZoomRail() {
   }
 }
 
+/* ═══════════════ Mode bergantian ═══════════════ */
+
+/**
+ * Jalur untuk HP yang menolak dua kamera sekaligus — dan itu termasuk SEMUA
+ * iPhone, karena Safari mengunci satu kamera aktif.
+ *
+ * Alih-alih memaksa dua stream hidup, hanya satu yang pernah terbuka: sisi yang
+ * aktif tampil hidup, sisi lain memakai frame terakhir yang dibekukan. Saat
+ * tombol rana ditekan, aplikasi membekukan sisi yang hidup, berpindah ke sisi
+ * lain, menunggu eksposurnya stabil, membekukannya juga, lalu menggabungkan
+ * keduanya. Hasilnya foto dual-cam sungguhan — hanya saja kedua sisinya terpaut
+ * sekitar satu detik, bukan serentak.
+ */
+
+const nextFrame = () => new Promise(requestAnimationFrame);
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function seqStatus(text) {
+  const el = $('#seqStatus');
+  if (!text) { el.hidden = true; return; }
+  $('#seqText').textContent = text;
+  el.hidden = false;
+}
+
+/** Simpan frame video yang sedang tampil sebagai still untuk sisi tersebut. */
+function freezeSide(side) {
+  const w = videoA.videoWidth, h = videoA.videoHeight;
+  if (!w || !h) return false;
+  const c = frozen[side];
+  c.width = w; c.height = h;
+  // Disimpan mentah, tanpa cermin — pencerminan tetap urusan compositor,
+  // supaya frame beku dan frame hidup diperlakukan sama persis.
+  c.getContext('2d').drawImage(videoA, 0, 0, w, h);
+  return true;
+}
+
+/** Sambungkan sumber compositor sesuai sisi mana yang sedang hidup. */
+function wireSources() {
+  if (state.alternating) {
+    const live = rig.activeSide;
+    comp.setSources(
+      live === 'back' ? videoA : frozen.back,
+      live === 'front' ? videoA : frozen.front,
+    );
+  } else {
+    comp.setSources(videoA, rig.front ? videoB : null);
+  }
+}
+
+/** Pindah sisi aktif tanpa membekukan apa pun (pemanggil yang mengatur itu). */
+async function switchSideRaw(side) {
+  const ok = await rig.openSide(side);
+  if (!ok) return false;
+  await attach(videoA, rig.liveStream);
+  wireSources();
+  updateLiveSideChip();
+  return true;
+}
+
+/** Pindah sisi atas permintaan pengguna: bekukan dulu yang ditinggalkan. */
+async function flipLiveSide() {
+  if (state.busy) return;
+  state.busy = true;
+  const target = other(rig.activeSide);
+  seqStatus(`Berpindah ke kamera ${SIDE_LABEL[target].toLowerCase()}…`);
+  freezeSide(rig.activeSide);
+  const ok = await switchSideRaw(target);
+  await wait(400);
+  seqStatus('');
+  state.busy = false;
+  if (!ok) toast(`Kamera ${SIDE_LABEL[target].toLowerCase()} tidak bisa dibuka`);
+}
+
+function updateLiveSideChip() {
+  const chip = $('#btnLiveSide');
+  chip.hidden = !state.alternating;
+  $('#liveSideLabel').textContent = SIDE_LABEL[rig.activeSide].toUpperCase();
+}
+
+/**
+ * Urutan jepret dual-cam bergantian. Mengembalikan blob komposit, atau null.
+ */
+async function captureAlternating() {
+  const origin = rig.activeSide;
+  const target = other(origin);
+
+  seqStatus(`Mengambil kamera ${SIDE_LABEL[origin].toLowerCase()}…`);
+  if (!freezeSide(origin)) { seqStatus(''); toast('Kamera belum siap'); return null; }
+
+  seqStatus(`Berpindah ke kamera ${SIDE_LABEL[target].toLowerCase()}…`);
+  const switched = await switchSideRaw(target);
+  if (switched) {
+    // Kamera yang baru dibuka butuh waktu menyetel eksposur dan fokus;
+    // menjepret terlalu cepat menghasilkan frame gelap atau buram.
+    await wait(700);
+    seqStatus(`Mengambil kamera ${SIDE_LABEL[target].toLowerCase()}…`);
+    freezeSide(target);
+  } else {
+    toast(`Kamera ${SIDE_LABEL[target].toLowerCase()} tidak bisa dibuka — memakai frame terakhir`);
+  }
+
+  // Kedua slot kini berisi still, jadi satu frame compositor menghasilkan
+  // komposit penuh dengan kedua kamera segar.
+  seqStatus('Menggabungkan…');
+  comp.setSources(frozen.back, frozen.front);
+  await nextFrame();
+  await nextFrame();
+  flash();
+  const blob = await comp.snapshot('image/jpeg', 0.95);
+  const thumb = comp.thumbnail();
+
+  // Kembalikan pratinjau ke sisi semula.
+  seqStatus(`Kembali ke kamera ${SIDE_LABEL[origin].toLowerCase()}…`);
+  if (switched) await switchSideRaw(origin);
+  wireSources();
+  seqStatus('');
+  return blob ? { blob, thumb } : null;
+}
+
+/** Nyalakan mode bergantian: ambil sekali potret sisi lain sebagai bekal awal. */
+async function enableAlternating(announce = true) {
+  if (!rig.canAlternate) return false;
+  state.alternating = true;
+  state.busy = true;
+  $('#stageNotice').hidden = true;
+
+  seqStatus('Menyiapkan mode bergantian…');
+  freezeSide(rig.activeSide);
+
+  const target = other(rig.activeSide);
+  if (await switchSideRaw(target)) {
+    await wait(700);
+    freezeSide(target);
+    await switchSideRaw(other(target));
+  }
+
+  wireSources();
+  updateLiveSideChip();
+  seqStatus('');
+  state.busy = false;
+  applyRigToUi();
+  if (announce) toast('Mode bergantian aktif — jepret untuk dual-cam');
+  return true;
+}
+
+$('#btnLiveSide').addEventListener('click', flipLiveSide);
+$('#stageNoticeAlt').addEventListener('click', () => enableAlternating());
+
 /* ═══════════════ Pengambilan gambar ═══════════════ */
 
 function flash() {
@@ -436,7 +599,7 @@ function runCountdown(seconds) {
   });
 }
 
-async function persistShot({ blob, type, duration = 0 }) {
+async function persistShot({ blob, type, duration = 0, thumb = null }) {
   const { w, h } = outputSize(tuning.aspect, tuning.quality);
   const filename = filenameFor(type, blob.type);
 
@@ -450,8 +613,11 @@ async function persistShot({ blob, type, duration = 0 }) {
     duration,
     filename,
     layout: LAYOUT_BY_ID[tuning.layout]?.name ?? tuning.layout,
-    dual: rig.mode === 'dual',
-    thumb: comp.thumbnail(),
+    dual: rig.mode === 'dual' || state.alternating,
+    capture: rig.mode === 'dual' ? 'serentak' : state.alternating ? 'bergantian' : 'solo',
+    // Di mode bergantian kanvas sudah kembali ke pratinjau saat ini, jadi
+    // thumbnail harus diambil sewaktu komposit masih terpasang.
+    thumb: thumb ?? comp.thumbnail(),
   });
 
   $('#lastShotImg').src = record.thumb;
@@ -470,6 +636,14 @@ async function persistShot({ blob, type, duration = 0 }) {
 
 async function takePhoto() {
   await runCountdown(state.timer);
+
+  if (state.alternating) {
+    const result = await captureAlternating();
+    if (!result) return;
+    await persistShot({ blob: result.blob, type: 'photo', thumb: result.thumb });
+    return;
+  }
+
   flash();
   const blob = await comp.snapshot('image/jpeg', 0.95);
   if (!blob) { toast('Gagal mengambil foto'); return; }
@@ -478,6 +652,15 @@ async function takePhoto() {
 
 async function startRecording() {
   await runCountdown(state.timer);
+
+  // Di mode bergantian hanya satu kamera yang benar-benar hidup, jadi sisi
+  // satunya akan diam di video. Lebih baik dikatakan sekali daripada membuat
+  // pengguna mengira aplikasinya rusak.
+  if (state.alternating && !state.altVideoWarned) {
+    state.altVideoWarned = true;
+    toast(`Video merekam kamera ${SIDE_LABEL[rig.activeSide].toLowerCase()}; sisi lain jadi foto diam`, null, null, 5000);
+  }
+
   const audio = await rig.ensureAudio();
   if (!audio) toast('Mikrofon tidak tersedia — merekam tanpa suara');
   try {
@@ -729,17 +912,29 @@ function uiLoop() {
 
 function applyRigToUi() {
   const dual = rig.mode === 'dual';
-  setStatus(dual ? 'DUAL LENS ACTIVE' : 'MODE SOLO', dual ? '' : 'warn');
+  const alt = state.alternating;
+
+  setStatus(
+    dual ? 'DUAL LENS ACTIVE' : alt ? 'MODE BERGANTIAN' : 'MODE SOLO',
+    dual || alt ? '' : 'warn',
+  );
 
   const notice = $('#stageNotice');
-  if (dual) {
+  const altBtn = $('#stageNoticeAlt');
+  if (dual || alt) {
     notice.hidden = true;
   } else {
     notice.hidden = false;
-    $('#stageNoticeText').textContent =
-      `${rig.reason} Aplikasi jalan dengan satu kamera — foto & video tetap bisa disimpan.`;
+    // Dua kamera ada tapi tidak bisa serentak → tawarkan jalan keluarnya,
+    // jangan cuma umumkan kegagalan.
+    altBtn.hidden = !rig.canAlternate;
+    $('#stageNoticeText').textContent = rig.canAlternate
+      ? `${rig.reason} Tapi kedua kamera tetap bisa dipakai bergantian: jepret belakang, tukar kilat, jepret depan, lalu digabung jadi satu foto dual-cam.`
+      : `${rig.reason} Aplikasi jalan dengan satu kamera — foto & video tetap bisa disimpan.`;
     $('#stageNoticeAction').onclick = () => { notice.hidden = true; };
   }
+
+  updateLiveSideChip();
 
   const ok = rig.log.filter((l) => l.ok === true).length;
   const failed = rig.log.filter((l) => l.ok === false).length;
@@ -747,8 +942,11 @@ function applyRigToUi() {
     ? 'Kamera belum dibuka'
     : `${rig.devices.length} kamera terdeteksi · ${ok} langkah berhasil, ${failed} gagal`;
 
-  $('#btnSwap').disabled = !dual;
-  $('#btnSwap').style.opacity = dual ? '' : '.4';
+  // Menukar posisi feed tetap berarti di mode bergantian — yang ditukar adalah
+  // slot layoutnya, bukan kamera mana yang hidup.
+  const canSwap = dual || alt;
+  $('#btnSwap').disabled = !canSwap;
+  $('#btnSwap').style.opacity = canSwap ? '' : '.4';
   syncTuningUI();
 }
 
@@ -774,6 +972,14 @@ async function boot() {
 
   buildZoomRail();
   applyRigToUi();
+
+  // Dua kamera ada tapi tidak bisa serentak: langsung tawarkan hasil, bukan
+  // pesan kegagalan. Ini yang sebenarnya diinginkan pengguna.
+  if (rig.canAlternate) {
+    $('#gate').hidden = true;
+    await enableAlternating(false);
+    toast('Kamera tidak bisa serentak di HP ini — mode bergantian dinyalakan');
+  }
   store.requestPersistence();
 
   $('#gate').hidden = true;
@@ -786,6 +992,7 @@ async function boot() {
 }
 
 rig.addEventListener('change', () => {
+  if (state.alternating) { wireSources(); applyRigToUi(); return; }
   // Kamera kedua bisa lepas di tengah jalan — lepaskan juga elemennya supaya
   // compositor tidak menggambar frame beku dari stream yang sudah mati.
   if (!rig.front) videoB.srcObject = null;
